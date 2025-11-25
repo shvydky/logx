@@ -45,7 +45,7 @@ This eliminates the need for per-module logger initialization.
 ## Installation
 
 ```bash
-go get github.com/your-org/logx
+go get github.com/shvydky/logx
 ```
 
 ---
