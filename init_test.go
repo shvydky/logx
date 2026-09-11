@@ -71,6 +71,32 @@ func TestForBeforeInitUsesDefaults(t *testing.T) {
 	}
 }
 
+func TestForDereferencesNestedPointers(t *testing.T) {
+	preserveGlobals(t)
+
+	var output bytes.Buffer
+	Init(&Config{
+		DefaultLevel: slog.LevelInfo,
+		Levels: map[string]slog.Level{
+			"github.com/shvydky/logx.fallbackTarget": slog.LevelDebug,
+		},
+	}, WithWriter(&output))
+
+	var target *fallbackTarget
+	For(&target).Debug("nested pointer message")
+
+	got := output.String()
+	for _, want := range []string{
+		`"msg":"nested pointer message"`,
+		`"pkg":"github.com/shvydky/logx"`,
+		`"type":"fallbackTarget"`,
+	} {
+		if !strings.Contains(got, want) {
+			t.Errorf("output %q does not contain %q", got, want)
+		}
+	}
+}
+
 func TestInitNilUsesDefaultConfig(t *testing.T) {
 	preserveGlobals(t)
 

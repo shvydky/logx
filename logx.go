@@ -63,7 +63,7 @@ func For(target any) *slog.Logger {
 	defer stateMu.RUnlock()
 
 	t := reflect.TypeOf(target)
-	if t.Kind() == reflect.Pointer {
+	for t.Kind() == reflect.Pointer {
 		t = t.Elem()
 	}
 
