@@ -44,7 +44,6 @@ func Init(cfg *Config, opts ...Options) *slog.Logger {
 		}
 	}
 
-	lc.handler = h
 	config.Store(lc)
 	slog.SetDefault(slog.New(newLevelHandler(h, lc.defaultLevel)))
 	return slog.Default()
@@ -73,9 +72,8 @@ func For(target any) *slog.Logger {
 	next := slog.Default().Handler()
 	if cfg != nil {
 		level = cfg.levelFor(pkg, full)
-		next = cfg.handler
 	}
-	logger := slog.New(newLevelHandler(next, level))
+	logger := slog.New(withLevel(next, level))
 
 	if pkg != "" {
 		logger = logger.With(slog.String(attrPkg, pkg))

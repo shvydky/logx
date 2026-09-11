@@ -14,6 +14,14 @@ func newLevelHandler(next slog.Handler, level slog.Level) slog.Handler {
 	return &levelHandler{next: next, level: level}
 }
 
+func withLevel(next slog.Handler, level slog.Level) slog.Handler {
+	if h, ok := next.(*levelHandler); ok {
+		return &levelHandler{next: h.next, level: level}
+	}
+
+	return newLevelHandler(next, level)
+}
+
 func (h *levelHandler) Enabled(ctx context.Context, lvl slog.Level) bool {
 	if lvl < h.level {
 		return false

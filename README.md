@@ -121,6 +121,16 @@ else:
 
 Fast-path evaluation ensures minimal overhead.
 
+`For` uses the current `slog.Default()` handler when the logger is created. If
+the default logger is replaced with `slog.SetDefault`, subsequent calls to
+`For` use the replacement handler; loggers returned by earlier calls keep the
+handler they were created with.
+
+When using `WithHandler`, configure the custom handler to accept the lowest
+level present in `Config.DefaultLevel` and `Config.Levels`. Handler-level
+filtering is applied in addition to `logx` routing, so a custom handler can
+still discard a record allowed by a package- or type-level override.
+
 ---
 ## Requirements
 

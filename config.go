@@ -41,7 +41,6 @@ func WithHandler(h slog.Handler) Options {
 type levelConfig struct {
 	defaultLevel slog.Level
 	levels       map[string]slog.Level
-	handler      slog.Handler
 }
 
 func newLevelConfig(cfg *Config) *levelConfig {

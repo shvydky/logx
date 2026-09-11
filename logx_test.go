@@ -152,3 +152,20 @@ func TestInitTakesConfigurationSnapshot(t *testing.T) {
 		t.Fatalf("mutating Levels changed the active configuration: %q", got)
 	}
 }
+
+func TestForUsesCurrentDefaultHandler(t *testing.T) {
+	first := &testHandler{}
+	second := &testHandler{}
+
+	logx.Init(&logx.Config{DefaultLevel: slog.LevelInfo}, logx.WithHandler(first))
+	slog.SetDefault(slog.New(second))
+
+	logx.For(testTarget{}).Info("current handler message")
+
+	if first.count != 0 {
+		t.Fatalf("original handler received %d records, want 0", first.count)
+	}
+	if second.count != 1 {
+		t.Fatalf("current default handler received %d records, want 1", second.count)
+	}
+}
