@@ -1,8 +1,10 @@
 package logx_test
 
 import (
+	"bytes"
 	"context"
 	"log/slog"
+	"strings"
 	"testing"
 
 	"github.com/shvydky/logx"
@@ -11,6 +13,8 @@ import (
 type testHandler struct {
 	count int
 }
+
+type testTarget struct{}
 
 // Enabled implements slog.Handler.
 func (t *testHandler) Enabled(context.Context, slog.Level) bool {
@@ -52,5 +56,44 @@ func TestFor(t *testing.T) {
 		if th.count != 3 {
 			t.Errorf("expected 3 log entries handled, got %d", th.count)
 		}
+	}
+}
+
+func TestTypeLevelCanBeLowerThanDefaultLevel(t *testing.T) {
+	var output bytes.Buffer
+
+	logx.Init(&logx.Config{
+		DefaultLevel: slog.LevelInfo,
+		Levels: map[string]slog.Level{
+			"github.com/shvydky/logx_test.testTarget": slog.LevelDebug,
+		},
+	}, logx.WithWriter(&output))
+
+	logx.For(testTarget{}).Debug("type debug message")
+	logx.For(t).Debug("default debug message")
+
+	if !strings.Contains(output.String(), "type debug message") {
+		t.Fatalf("type-level Debug override was filtered by the base handler: %q", output.String())
+	}
+	if strings.Contains(output.String(), "default debug message") {
+		t.Fatalf("default Info level did not filter a Debug record: %q", output.String())
+	}
+}
+
+func TestPackageLevelCanBeLowerThanDefaultLevelInPrettyMode(t *testing.T) {
+	var output bytes.Buffer
+
+	logx.Init(&logx.Config{
+		DefaultLevel: slog.LevelInfo,
+		Levels: map[string]slog.Level{
+			"github.com/shvydky/logx_test": slog.LevelDebug,
+		},
+		Pretty: true,
+	}, logx.WithWriter(&output))
+
+	logx.For(testTarget{}).Debug("package debug message")
+
+	if !strings.Contains(output.String(), "package debug message") {
+		t.Fatalf("package-level Debug override was filtered by the base handler: %q", output.String())
 	}
 }

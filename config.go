@@ -64,6 +64,27 @@ func newLevelConfig(cfg *Config) *levelConfig {
 	return lc
 }
 
+// minLevel returns the lowest level that can be enabled by the configuration.
+// Built-in handlers must use this level so that their own filtering does not
+// discard records allowed by a package- or type-specific override.
+func (lc *levelConfig) minLevel() slog.Level {
+	level := lc.src.DefaultLevel
+
+	for _, candidate := range lc.byPackage {
+		if candidate < level {
+			level = candidate
+		}
+	}
+
+	for _, candidate := range lc.byType {
+		if candidate < level {
+			level = candidate
+		}
+	}
+
+	return level
+}
+
 func classifyLevelKey(key string) (bool, string) {
 	k := strings.TrimSpace(key)
 	if k == "" {

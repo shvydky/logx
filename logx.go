@@ -37,9 +37,9 @@ func Init(cfg *Config, opts ...Options) *slog.Logger {
 
 	var h slog.Handler
 	if lc.src.Pretty {
-		h = tint.NewHandler(w, &tint.Options{Level: slog.LevelDebug, TimeFormat: time.RFC3339})
+		h = tint.NewHandler(w, &tint.Options{Level: lc.minLevel(), TimeFormat: time.RFC3339})
 	} else {
-		h = slog.NewJSONHandler(w, &slog.HandlerOptions{Level: cfg.DefaultLevel})
+		h = slog.NewJSONHandler(w, &slog.HandlerOptions{Level: lc.minLevel()})
 	}
 	slog.SetDefault(slog.New(h))
 	return slog.Default()
