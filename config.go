@@ -3,6 +3,7 @@ package logx
 import (
 	"io"
 	"log/slog"
+	"sort"
 	"strings"
 )
 
@@ -49,8 +50,19 @@ func newLevelConfig(cfg *Config) *levelConfig {
 		levels:       make(map[string]slog.Level),
 	}
 
-	for key, lvl := range cfg.Levels {
-		lc.levels[strings.TrimSpace(key)] = lvl
+	keys := make([]string, 0, len(cfg.Levels))
+	for key := range cfg.Levels {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+
+	for _, key := range keys {
+		normalized := strings.TrimSpace(key)
+		// Prefer an exact key; otherwise retain the first sorted variant.
+		if _, exists := lc.levels[normalized]; exists && key != normalized {
+			continue
+		}
+		lc.levels[normalized] = cfg.Levels[key]
 	}
 
 	return lc

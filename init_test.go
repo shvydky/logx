@@ -141,3 +141,21 @@ func TestLevelFor(t *testing.T) {
 		})
 	}
 }
+
+func TestLevelConfigResolvesNormalizedKeyCollisionsDeterministically(t *testing.T) {
+	lc := newLevelConfig(&Config{
+		Levels: map[string]slog.Level{
+			" example.com/app ": slog.LevelDebug,
+			"example.com/app":   slog.LevelError,
+			"  fallback ":       slog.LevelWarn,
+			" fallback ":        slog.LevelDebug,
+		},
+	})
+
+	if got := lc.levels["example.com/app"]; got != slog.LevelError {
+		t.Fatalf("exact key level = %s, want %s", got, slog.LevelError)
+	}
+	if got := lc.levels["fallback"]; got != slog.LevelWarn {
+		t.Fatalf("first whitespace variant level = %s, want %s", got, slog.LevelWarn)
+	}
+}
