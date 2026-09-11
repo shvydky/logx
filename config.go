@@ -39,17 +39,17 @@ func WithHandler(h slog.Handler) Options {
 }
 
 type levelConfig struct {
-	src       *Config
-	byPackage map[string]slog.Level
-	byType    map[string]slog.Level
-	handler   slog.Handler
+	defaultLevel slog.Level
+	byPackage    map[string]slog.Level
+	byType       map[string]slog.Level
+	handler      slog.Handler
 }
 
 func newLevelConfig(cfg *Config) *levelConfig {
 	lc := &levelConfig{
-		src:       cfg,
-		byPackage: make(map[string]slog.Level),
-		byType:    make(map[string]slog.Level),
+		defaultLevel: cfg.DefaultLevel,
+		byPackage:    make(map[string]slog.Level),
+		byType:       make(map[string]slog.Level),
 	}
 
 	for key, lvl := range cfg.Levels {
@@ -69,7 +69,7 @@ func newLevelConfig(cfg *Config) *levelConfig {
 // Built-in handlers must use this level so that their own filtering does not
 // discard records allowed by a package- or type-specific override.
 func (lc *levelConfig) minLevel() slog.Level {
-	level := lc.src.DefaultLevel
+	level := lc.defaultLevel
 
 	for _, candidate := range lc.byPackage {
 		if candidate < level {

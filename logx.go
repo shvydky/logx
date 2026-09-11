@@ -37,7 +37,7 @@ func Init(cfg *Config, opts ...Options) *slog.Logger {
 			w = os.Stdout
 		}
 
-		if lc.src.Pretty {
+		if cfg.Pretty {
 			h = tint.NewHandler(w, &tint.Options{Level: lc.minLevel(), TimeFormat: time.RFC3339})
 		} else {
 			h = slog.NewJSONHandler(w, &slog.HandlerOptions{Level: lc.minLevel()})
@@ -46,7 +46,7 @@ func Init(cfg *Config, opts ...Options) *slog.Logger {
 
 	lc.handler = h
 	config.Store(lc)
-	slog.SetDefault(slog.New(newLevelHandler(h, cfg.DefaultLevel)))
+	slog.SetDefault(slog.New(newLevelHandler(h, lc.defaultLevel)))
 	return slog.Default()
 }
 
@@ -72,7 +72,7 @@ func For(target any) *slog.Logger {
 	level := slog.LevelInfo
 	next := slog.Default().Handler()
 	if cfg != nil {
-		level = cfg.src.DefaultLevel
+		level = cfg.defaultLevel
 		next = cfg.handler
 		if l, ok := cfg.byType[full]; ok {
 			level = l

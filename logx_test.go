@@ -127,3 +127,28 @@ func TestDefaultLoggerKeepsGlobalLevelWithLowerOverride(t *testing.T) {
 		})
 	}
 }
+
+func TestInitTakesConfigurationSnapshot(t *testing.T) {
+	var output bytes.Buffer
+	config := &logx.Config{
+		DefaultLevel: slog.LevelInfo,
+		Levels: map[string]slog.Level{
+			"github.com/shvydky/logx_test.testTarget": slog.LevelDebug,
+		},
+	}
+	logx.Init(config, logx.WithWriter(&output))
+
+	config.DefaultLevel = slog.LevelError
+	config.Levels["github.com/shvydky/logx_test.testTarget"] = slog.LevelError
+
+	logx.For(t).Info("snapshot info message")
+	logx.For(testTarget{}).Debug("snapshot debug message")
+
+	got := output.String()
+	if !strings.Contains(got, "snapshot info message") {
+		t.Fatalf("mutating DefaultLevel changed the active configuration: %q", got)
+	}
+	if !strings.Contains(got, "snapshot debug message") {
+		t.Fatalf("mutating Levels changed the active configuration: %q", got)
+	}
+}
