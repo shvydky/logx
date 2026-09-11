@@ -18,6 +18,10 @@ const (
 )
 
 func Init(cfg *Config, opts ...Options) *slog.Logger {
+	if cfg == nil {
+		cfg = &Config{}
+	}
+
 	for _, opt := range opts {
 		opt(cfg)
 	}
@@ -64,12 +68,15 @@ func For(target any) *slog.Logger {
 	}
 
 	cfg := config.Load()
-	level := cfg.src.DefaultLevel
-	if l, ok := cfg.byType[full]; ok {
-		level = l
-	} else if pkg != "" {
-		if l, ok := cfg.byPackage[pkg]; ok {
+	level := slog.LevelInfo
+	if cfg != nil {
+		level = cfg.src.DefaultLevel
+		if l, ok := cfg.byType[full]; ok {
 			level = l
+		} else if pkg != "" {
+			if l, ok := cfg.byPackage[pkg]; ok {
+				level = l
+			}
 		}
 	}
 	logger := slog.New(newLevelHandler(slog.Default().Handler(), level))
