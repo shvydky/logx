@@ -4,6 +4,7 @@ import (
 	"log/slog"
 	"os"
 	"reflect"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -11,6 +12,7 @@ import (
 )
 
 var config atomic.Pointer[levelConfig]
+var stateMu sync.RWMutex
 
 const (
 	attrPkg  = "pkg"
@@ -44,15 +46,21 @@ func Init(cfg *Config, opts ...Options) *slog.Logger {
 		}
 	}
 
+	logger := slog.New(newLevelHandler(h, lc.defaultLevel))
+	stateMu.Lock()
 	config.Store(lc)
-	slog.SetDefault(slog.New(newLevelHandler(h, lc.defaultLevel)))
-	return slog.Default()
+	slog.SetDefault(logger)
+	stateMu.Unlock()
+	return logger
 }
 
 func For(target any) *slog.Logger {
 	if target == nil {
 		return slog.Default()
 	}
+
+	stateMu.RLock()
+	defer stateMu.RUnlock()
 
 	t := reflect.TypeOf(target)
 	if t.Kind() == reflect.Pointer {

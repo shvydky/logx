@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"log/slog"
 	"strings"
+	"sync"
 	"testing"
+	"time"
 )
 
 type fallbackTarget struct{}
@@ -18,6 +20,34 @@ func preserveGlobals(t *testing.T) {
 		config.Store(previousConfig)
 		slog.SetDefault(previousLogger)
 	})
+}
+
+func TestForWaitsForConsistentState(t *testing.T) {
+	preserveGlobals(t)
+
+	stateMu.Lock()
+	var wg sync.WaitGroup
+	wg.Add(1)
+	started := make(chan struct{})
+	done := make(chan struct{})
+	go func() {
+		defer wg.Done()
+		close(started)
+		For(fallbackTarget{})
+		close(done)
+	}()
+	<-started
+
+	select {
+	case <-done:
+		stateMu.Unlock()
+		wg.Wait()
+		t.Fatal("For returned while logger state was being updated")
+	case <-time.After(10 * time.Millisecond):
+	}
+
+	stateMu.Unlock()
+	wg.Wait()
 }
 
 func TestForBeforeInitUsesDefaults(t *testing.T) {
