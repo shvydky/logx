@@ -159,3 +159,25 @@ func TestLevelConfigResolvesNormalizedKeyCollisionsDeterministically(t *testing.
 		t.Fatalf("first whitespace variant level = %s, want %s", got, slog.LevelWarn)
 	}
 }
+
+func TestLevelHandlerWithGroupPreservesGroupAndLevel(t *testing.T) {
+	var output bytes.Buffer
+	base := slog.NewJSONHandler(&output, &slog.HandlerOptions{Level: slog.LevelDebug})
+	logger := slog.New(newLevelHandler(base, slog.LevelInfo)).WithGroup("request")
+
+	logger.Debug("filtered message", slog.String("id", "debug-id"))
+	logger.Info("handled message", slog.String("id", "info-id"))
+
+	got := output.String()
+	if strings.Contains(got, "filtered message") {
+		t.Fatalf("grouped handler did not preserve its level: %q", got)
+	}
+	for _, want := range []string{
+		`"msg":"handled message"`,
+		`"request":{"id":"info-id"}`,
+	} {
+		if !strings.Contains(got, want) {
+			t.Errorf("output %q does not contain %q", got, want)
+		}
+	}
+}
