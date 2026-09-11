@@ -55,7 +55,7 @@ go get github.com/shvydky/logx
 ### Initialize logger
 
 ```go
-logx.Init(logx.Config{
+logx.Init(&logx.Config{
     Pretty:      true,
     DefaultLevel: slog.LevelInfo, // global level
     Levels: map[string]slog.Level{
