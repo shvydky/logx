@@ -40,26 +40,18 @@ func WithHandler(h slog.Handler) Options {
 
 type levelConfig struct {
 	defaultLevel slog.Level
-	byPackage    map[string]slog.Level
-	byType       map[string]slog.Level
+	levels       map[string]slog.Level
 	handler      slog.Handler
 }
 
 func newLevelConfig(cfg *Config) *levelConfig {
 	lc := &levelConfig{
 		defaultLevel: cfg.DefaultLevel,
-		byPackage:    make(map[string]slog.Level),
-		byType:       make(map[string]slog.Level),
+		levels:       make(map[string]slog.Level),
 	}
 
 	for key, lvl := range cfg.Levels {
-		isType, normalized := classifyLevelKey(key)
-
-		if isType {
-			lc.byType[normalized] = lvl
-		} else {
-			lc.byPackage[normalized] = lvl
-		}
+		lc.levels[strings.TrimSpace(key)] = lvl
 	}
 
 	return lc
@@ -71,13 +63,7 @@ func newLevelConfig(cfg *Config) *levelConfig {
 func (lc *levelConfig) minLevel() slog.Level {
 	level := lc.defaultLevel
 
-	for _, candidate := range lc.byPackage {
-		if candidate < level {
-			level = candidate
-		}
-	}
-
-	for _, candidate := range lc.byType {
+	for _, candidate := range lc.levels {
 		if candidate < level {
 			level = candidate
 		}
@@ -86,14 +72,12 @@ func (lc *levelConfig) minLevel() slog.Level {
 	return level
 }
 
-func classifyLevelKey(key string) (bool, string) {
-	k := strings.TrimSpace(key)
-	if k == "" {
-		return false, k
+func (lc *levelConfig) levelFor(pkg, full string) slog.Level {
+	if level, ok := lc.levels[full]; ok {
+		return level
 	}
-
-	lastSlash := strings.LastIndex(k, "/")
-	lastDot := strings.LastIndex(k, ".")
-
-	return lastDot > lastSlash, k
+	if level, ok := lc.levels[pkg]; ok {
+		return level
+	}
+	return lc.defaultLevel
 }

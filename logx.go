@@ -72,15 +72,8 @@ func For(target any) *slog.Logger {
 	level := slog.LevelInfo
 	next := slog.Default().Handler()
 	if cfg != nil {
-		level = cfg.defaultLevel
+		level = cfg.levelFor(pkg, full)
 		next = cfg.handler
-		if l, ok := cfg.byType[full]; ok {
-			level = l
-		} else if pkg != "" {
-			if l, ok := cfg.byPackage[pkg]; ok {
-				level = l
-			}
-		}
 	}
 	logger := slog.New(newLevelHandler(next, level))
 

@@ -52,3 +52,36 @@ func TestInitNilUsesDefaultConfig(t *testing.T) {
 		t.Fatalf("unexpected output: %q", got)
 	}
 }
+
+func TestLevelFor(t *testing.T) {
+	lc := newLevelConfig(&Config{
+		DefaultLevel: slog.LevelInfo,
+		Levels: map[string]slog.Level{
+			" example.com/app/worker ":         slog.LevelWarn,
+			"example.com/app/worker.Worker":    slog.LevelError,
+			"example.com/app/worker.v2":        slog.LevelDebug,
+			"example.com/app/worker.v2.Worker": slog.Level(-8),
+		},
+	})
+
+	tests := []struct {
+		name string
+		pkg  string
+		full string
+		want slog.Level
+	}{
+		{name: "package", pkg: "example.com/app/worker", full: "example.com/app/worker.Other", want: slog.LevelWarn},
+		{name: "type takes priority", pkg: "example.com/app/worker", full: "example.com/app/worker.Worker", want: slog.LevelError},
+		{name: "package containing dot", pkg: "example.com/app/worker.v2", full: "example.com/app/worker.v2.Other", want: slog.LevelDebug},
+		{name: "type in package containing dot", pkg: "example.com/app/worker.v2", full: "example.com/app/worker.v2.Worker", want: slog.Level(-8)},
+		{name: "default", pkg: "example.com/app/other", full: "example.com/app/other.Worker", want: slog.LevelInfo},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if got := lc.levelFor(test.pkg, test.full); got != test.want {
+				t.Fatalf("levelFor(%q, %q) = %s, want %s", test.pkg, test.full, got, test.want)
+			}
+		})
+	}
+}
