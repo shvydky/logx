@@ -27,8 +27,8 @@ type-level > package-level > global-level
 
 ```json
 {
-  "pkg": "myapp/module/Type",
-  "type": "Type",
+  "pkg": "myapp/module",
+  "type": "Type"
 }
 ```
 
@@ -89,7 +89,7 @@ func (w *Worker) Run() {
 ### Development mode
 
 ```
-INFO worker.go:42 worker started pkg=myapp/worker type=Worker
+INFO worker started pkg=myapp/worker type=Worker
 ```
 
 ### Production (JSON)
@@ -100,7 +100,7 @@ INFO worker.go:42 worker started pkg=myapp/worker type=Worker
   "level": "INFO",
   "msg": "worker started",
   "pkg": "myapp/worker",
-  "type": "Worker",
+  "type": "Worker"
 }
 ```
 
