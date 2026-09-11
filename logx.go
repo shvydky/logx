@@ -27,25 +27,26 @@ func Init(cfg *Config, opts ...Options) *slog.Logger {
 	}
 
 	lc := newLevelConfig(cfg)
-	config.Store(lc)
-
-	if cfg.handler != nil {
-		slog.SetDefault(slog.New(cfg.handler))
-		return slog.Default()
-	}
-
-	w := cfg.writer
-	if w == nil {
-		w = os.Stdout
-	}
 
 	var h slog.Handler
-	if lc.src.Pretty {
-		h = tint.NewHandler(w, &tint.Options{Level: lc.minLevel(), TimeFormat: time.RFC3339})
+	if cfg.handler != nil {
+		h = cfg.handler
 	} else {
-		h = slog.NewJSONHandler(w, &slog.HandlerOptions{Level: lc.minLevel()})
+		w := cfg.writer
+		if w == nil {
+			w = os.Stdout
+		}
+
+		if lc.src.Pretty {
+			h = tint.NewHandler(w, &tint.Options{Level: lc.minLevel(), TimeFormat: time.RFC3339})
+		} else {
+			h = slog.NewJSONHandler(w, &slog.HandlerOptions{Level: lc.minLevel()})
+		}
 	}
-	slog.SetDefault(slog.New(h))
+
+	lc.handler = h
+	config.Store(lc)
+	slog.SetDefault(slog.New(newLevelHandler(h, cfg.DefaultLevel)))
 	return slog.Default()
 }
 
@@ -69,8 +70,10 @@ func For(target any) *slog.Logger {
 
 	cfg := config.Load()
 	level := slog.LevelInfo
+	next := slog.Default().Handler()
 	if cfg != nil {
 		level = cfg.src.DefaultLevel
+		next = cfg.handler
 		if l, ok := cfg.byType[full]; ok {
 			level = l
 		} else if pkg != "" {
@@ -79,7 +82,7 @@ func For(target any) *slog.Logger {
 			}
 		}
 	}
-	logger := slog.New(newLevelHandler(slog.Default().Handler(), level))
+	logger := slog.New(newLevelHandler(next, level))
 
 	if pkg != "" {
 		logger = logger.With(slog.String(attrPkg, pkg))

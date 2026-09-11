@@ -45,17 +45,16 @@ func TestFor(t *testing.T) {
 		},
 		Pretty: true,
 	}
-	logx.Init(config, logx.WithHandler(&testHandler{}))
+	handler := &testHandler{}
+	logx.Init(config, logx.WithHandler(handler))
 
 	logx.For(nil).Info("This should not panic")
 	logx.For(t).Info("Should log with type info", slog.String("test", "logx_test"))
 	logx.For(t).Debug("Should log with type debug", slog.String("test", "logx_test"))
 	logx.For(config).Debug("Should be ignored")
 
-	if th, ok := slog.Default().Handler().(*testHandler); ok {
-		if th.count != 3 {
-			t.Errorf("expected 3 log entries handled, got %d", th.count)
-		}
+	if handler.count != 3 {
+		t.Errorf("expected 3 log entries handled, got %d", handler.count)
 	}
 }
 
@@ -95,5 +94,36 @@ func TestPackageLevelCanBeLowerThanDefaultLevelInPrettyMode(t *testing.T) {
 
 	if !strings.Contains(output.String(), "package debug message") {
 		t.Fatalf("package-level Debug override was filtered by the base handler: %q", output.String())
+	}
+}
+
+func TestDefaultLoggerKeepsGlobalLevelWithLowerOverride(t *testing.T) {
+	for _, pretty := range []bool{false, true} {
+		t.Run(map[bool]string{false: "JSON", true: "pretty"}[pretty], func(t *testing.T) {
+			var output bytes.Buffer
+
+			logx.Init(&logx.Config{
+				DefaultLevel: slog.LevelInfo,
+				Levels: map[string]slog.Level{
+					"github.com/shvydky/logx_test.testTarget": slog.LevelDebug,
+				},
+				Pretty: pretty,
+			}, logx.WithWriter(&output))
+
+			slog.Default().Debug("default debug message")
+			logx.For(nil).Debug("nil target debug message")
+			logx.For(testTarget{}).Debug("overridden debug message")
+
+			got := output.String()
+			if strings.Contains(got, "default debug message") {
+				t.Fatalf("default logger bypassed the global level: %q", got)
+			}
+			if strings.Contains(got, "nil target debug message") {
+				t.Fatalf("nil target bypassed the global level: %q", got)
+			}
+			if !strings.Contains(got, "overridden debug message") {
+				t.Fatalf("type-level override was filtered: %q", got)
+			}
+		})
 	}
 }

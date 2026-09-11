@@ -42,6 +42,7 @@ type levelConfig struct {
 	src       *Config
 	byPackage map[string]slog.Level
 	byType    map[string]slog.Level
+	handler   slog.Handler
 }
 
 func newLevelConfig(cfg *Config) *levelConfig {
